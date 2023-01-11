@@ -1,9 +1,9 @@
 
 const allNum = 10000000
 
-const sampleNum = 10
+const sampleNum = 100
 
-const sampleTimes = 10
+const sampleTimes = 1000000
 
 const allList = Array.from(new Array(allNum), (e, i) => Math.random())
 
@@ -43,15 +43,16 @@ const {
 
 
 console.table({
-  expect,
-  variance,
-  sampleExpect,
-  sampleVariance,
-  sampleCorrectVariance,
-  expectDiff: expect - sampleExpect,
+  // expect,
+  // variance,
+  // sampleExpect,
+  // sampleVariance,
+  // sampleCorrectVariance,
+  // expectDiff: expect - sampleExpect,
   expectDiffRate: (expect - sampleExpect) / expect,
-  varianceDiff: variance - sampleVariance,
+  // varianceDiff: variance - sampleVariance,
   varianceDiffRate: (variance - sampleVariance) / variance,
-  correctVarianceDiff: variance - sampleCorrectVariance,
+  // correctVarianceDiff: variance - sampleCorrectVariance,
   correctVarianceDiffRate: (variance - sampleCorrectVariance) / variance,
 })
+// the experiment explains the Bessel's Correction
