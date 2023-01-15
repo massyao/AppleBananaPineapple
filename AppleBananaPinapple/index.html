@@ -1,1 +1,63 @@
+<html>
+<body>
+<script>
 
+	// problem :
+	// a/(b+c) + b/(a+c) + c/(a+b) = 4
+	// get the positive integer of a,b,c that satisfy the equation
+
+	const LOOP_LIMIT = 1e4;
+	/*
+	const digit_limit = 20
+	for (let digit_index = 1; digit_index < digit_limit ; digit_index++) {
+		let x = Math.pow(10, digit_index)
+		let y = Math.pow(10, digit_index) + 1
+
+
+		if ( (x - y) === 0) {
+			console.log(`js calc error when digit_index equals ${digit_index}`) // error when digit_index > 15
+		}
+	}
+	*/
+	// random 
+	const loop_func = loop_limit => {
+		let percentage = 0
+		let delta_x = 1e20
+		let delta_x_a, delta_x_b, delta_x_c
+		for (let a = 1; a < loop_limit ; a++) {
+			for (let b = 1; b < loop_limit ; b++) {
+				for (let c = 1; c < loop_limit ; c++) {
+					let a2 = a*a
+					let b2 = b*b
+					let c2 = c*c
+					let A = a - 3*b - 3*c
+					let B = b - 3*a - 3*c
+					let C = c - 3*a - 3*b
+					let X = 5*a*b*c
+					let calc = Math.abs(a2*A+b2*B+c2*C-X)
+
+					if ( calc < delta_x) {
+						console.log(`delta_x is ${delta_x}, calc is ${calc}, a is ${a}, b is ${b}, c is ${c},`)
+						delta_x = calc
+						delta_x_a = a
+						delta_x_b = b
+						delta_x_c = c
+						// console.log(`delta_x is ${delta_x}, calc is ${calc}, a is ${a}, b is ${b}, c is ${c},`)
+					}
+
+				}
+			}
+			let current_percentage = a/LOOP_LIMIT * 100
+			if ( percentage !== current_percentage) {
+				percentage = current_percentage
+				console.log('percentage: ', percentage, '% complete')
+			}
+		}
+		return { a:delta_x_a, b:delta_x_b, c:delta_x_c }
+	}
+	var approximate_obj = loop_func(LOOP_LIMIT)
+	console.table(approximate_obj)
+
+</script>
+</body>
+</html>
