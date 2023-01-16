@@ -15,10 +15,11 @@ import matplotlib.pyplot as plt;
 #   elif (temp > 98) :
 #     print(temp)
 
-order = 2 #阶数 x的最高次幂
+order = 3 #阶数 x的最高次幂
 num = order + 1 #X的列数
 
 def randomNoise(base = 10):
+  # -base  ~  +base 
   return  random.random() * base * 2 - base
 
 def calculation(x):
@@ -28,14 +29,14 @@ def calculation(x):
 
 
 def generateData(num = 10):
-  # tempList = [(random.random() * num) for i in range(num * 2)]
-  # xList = list(set(tempList))[0:num]
-  # xList.sort()
-  # yList = [calculation(x) + randomNoise(1) for x in xList]
-  x = np.arange(-1,1,0.02)
-  y = [((a*a-1)**3 + (a-0.5)**2 + 3*np.sin(2*a)) for a in x]
-  xList = [b1*(random.randint(90,120))/100 for b1 in x]
-  yList = [b2*(random.randint(90,120))/100 for b2 in y]
+  tempList = [(random.random() * num) for i in range(num * 2)]
+  xList = list(set(tempList))[0:num]
+  xList.sort()
+  yList = [calculation(x) + randomNoise(4) for x in xList]
+  # x = np.arange(-1,1,0.02)
+  # y = [((a*a-1)**3 + (a-0.5)**2 + 3*np.sin(2*a)) for a in x]
+  # xList = [b1*(random.randint(90,120))/100 for b1 in x]
+  # yList = [b2*(random.randint(90,120))/100 for b2 in y]
   # print(len(newList))
   return {'xList': xList, 'yList': yList}
 
