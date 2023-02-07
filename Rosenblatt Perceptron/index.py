@@ -2,41 +2,40 @@ import math;
 import numpy as np;
 import random;
 import matplotlib.pyplot as plt;
+import matplotlib.pylab as pylab;
+# from perceptron.perceptron import Perceptron
 from double_moon import *
 from utils import *
 
+# p = Perceptron() # use a short
 
 # YITA = 0.0001 # learning rate parameter
 
+
+def activation_function(x):
+  return (np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))
+
 # when the double moon data is linear separable
 def rosenblatt_perceptron(sample_data):
-  times = len(sample_data) # math.ceil(1 / YITA) * 2
-  YITA = 1 / times
+  times = 100 # math.ceil(1 / YITA) * 2
+  YITA = 0.01 # 1 / len(sample_data)
 
-  print('sample_data length', len(sample_data))
-
-  # use iteration
-  global w_iter
-  w_iter = np.matrix([0, 0, 0])
+  # error tip: w_iter should use [0, 0],but I write [0, 0, 0], which includes a bias weight
+  # np.matrix([random.random() * 2 - 1 for _ in range(3)])
+  w_iter = np.zeros((1, 3))
   # X = [1, x, y]
-  for i in range(times):
-    item = sample_data[i]
-    # nonlocal w_iter
-    res = w_iter * np.transpose(np.matrix([1, item[0], item[1]]))
-    y_iter = res.tolist()[0][0]
-    
-    sign_iter = np.sign(y_iter)
-    class_sign = np.sign(item[2])
-    # print('y_iter ', sign_iter)
-    if (sign_iter == class_sign):
-      # keep w(n + 1) = w(n)
-      w_iter = w_iter
-    elif (class_sign == -1):
-      w_iter = w_iter - np.multiply(item, YITA)
-      # print('w_iter deduce to', w_iter)
-    elif (class_sign == 1):
-      w_iter = w_iter + np.multiply(item, YITA)
-      # print('w_iter add to', w_iter)
+  for j in range(times):
+    for i in range(len(sample_data)):
+      item = sample_data[i]
+      x = [1, item[0], item[1]]
+      # res = w_iter * np.transpose(np.matrix([item[0], item[1]]))
+      res = w_iter * np.transpose(np.matrix(x))
+      iterError = item[2] - (1 if res.tolist()[0][0] >= 0 else -1)
+      # new_w = [i + YITA * iterError * j for i, j in zip(w, [item[0], item[1]])]
+      # error tip: item[0:2], I write item[:1] which make the error
+      # w_iter = w_iter + np.multiply(item[0:2], YITA * iterError)
+      w_iter = w_iter + np.multiply(x, YITA * iterError)
+      # print()
   return np.asarray(w_iter)[0]
 
 def logistic_regression():
@@ -62,18 +61,13 @@ def lms():
   return 1
 
 
-
-
-
-if __name__ == "__main__":
-  clear()
+def test_rosenblatt_perceptron():
   # print('get_distance', math.dist([0, 0], [1, 1]))
-  data = double_moon(4)
+  data = double_moon(3, 1000)
+  # data = double_moon(0, 1000)
+  # data = double_moon(-3, 1000)
 
   w = rosenblatt_perceptron(data['all'])
-
-  w_a = -1 * (w[1] / w[2])
-  w_b = -1 * (w[0] / w[2])
 
   a = data['class_a']
   b = data['class_b']
@@ -90,12 +84,24 @@ if __name__ == "__main__":
     label='class 2',
     s=1
   )
-  l1 = plt.plot(
-    [i * 0.3 for i in range(100)],
-    [w_a* i * 0.3 + w_b for i in range(100)],
-    label='line'
-  )
-  # l2 = plt.plot(xList,ySimList, label='eee')
+
+  # w = [0] + list(ww)
+  x1 = [i * 0.3 for i in range(100)] # [min(X[:,0]), max(X[:,0])]
+  # w0 + w1 * x + w2 * y  = 0 
+  m = -w[1]/w[2]
+  c = -w[0]/w[2]
+  x2 = [m*x + c for x in x1]
+  plt.plot(x1, x2, 'y-')
+
   plt.legend()
   plt.show()
   print('rosenblatt_perceptron w is ', w)
+  return
+
+
+# print(1.0 == 1)
+
+if __name__ == "__main__":
+  clear()
+  test_rosenblatt_perceptron()
+
