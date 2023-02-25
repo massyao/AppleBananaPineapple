@@ -116,9 +116,9 @@ class NeuralNetwork:
         # print('NeuralNetwork hidden_layer pd_error_wrt_weight   ', self.LEARNING_RATE * pd_error_wrt_weight, ' = hidden_layer deltas ', pd_errors_wrt_hidden_neuron_total_net_input[h], ' * input_hidden_layer inputs ', self.hidden_layer.neurons[h].calculate_pd_total_net_input_wrt_weight(w_ih))
         # Δw = α * ∂Eⱼ/∂wᵢ
         self.hidden_layer.neurons[h].weights[w_ih] -= self.LEARNING_RATE * pd_error_wrt_weight
-        # print('NeuralNetwork weight after update  ', self.hidden_layer.neurons[h].weights[w_ih])
+        # print('NeuralNetwork input_hidden_weight_new  ', self.hidden_layer.neurons[h].weights[w_ih])
 
-    
+    # print('NeuralNetwork feed_forward end')
 
 
   def calculate_total_error(self, training_sets):
@@ -203,7 +203,7 @@ class Neuron:
 
   # The error for each neuron is calculated by the Mean Square Error method:
   def calculate_error(self, target_output):
-    # print('calculate_error inputs', self.inputs, 'target_output ', target_output, ' self.output ', self.output, ' error is ', target_output - self.output, ' nn_error is ', 0.5 * (target_output - self.output) ** 2)
+    # print('NeuronLayer calculate_error inputs', self.inputs, 'target_output ', target_output, ' self.output ', self.output, ' error is ', target_output - self.output, ' nn_error is ', 0.5 * (target_output - self.output) ** 2)
     return 0.5 * (target_output - self.output) ** 2
 
   # The partial derivate of the error with respect to actual output then is calculated by:
@@ -273,7 +273,7 @@ absolute_path = os.path.dirname(__file__)
 # hidden layer nodes set to 5
 
 
-train_times = 10
+train_times = 5
 
 ETA = 0.5
 
@@ -363,7 +363,8 @@ def train(
       # notice: err should be 0.5 * np.multiply(err_temp, err_temp)
       err = np.matrix(class_value).T - output_node_value
       # print('class_value ', class_value, ' output_node_value ', output_node_value.T.tolist()[0])
-      print('mathmatical err ', (0.5 * np.multiply(err, err)).sum(axis=0)[0,0])
+      # use new weight to calculate error
+
 
 
       # backward phase, output -> hidden
@@ -385,7 +386,23 @@ def train(
       hidden_output_weight = hidden_output_weight_new
       # input_hidden_weight = input_hidden_weight + delta_w_input * (np.matrix([input_bias] + input_value))
       input_hidden_weight = input_hidden_weight + np.insert(delta_w_input, 0, 0, axis=1)
-      print()
+
+      # NeuralNetwork did not update bias weight
+      # if update bias weight, the result will be better
+      # input_hidden_weight[:, 0] = 1
+      # hidden_output_weight[:, 0] = 1
+
+      # print('allen input_hidden_weight ', input_hidden_weight)
+      # print('allen hidden_output_weight ', hidden_output_weight)
+
+      hidden_node_v_new = input_hidden_weight * input_extend
+      hidden_node_value_new = activation_function(hidden_node_v_new)
+      output_node_v_new = (hidden_output_weight) * np.insert(hidden_node_value_new, 0, hidden_bias).T
+      output_node_value_new = activation_function(output_node_v_new)
+      err_new = np.matrix(class_value).T - output_node_value_new
+      # print('mathmatical err ',  (0.5 * np.multiply(err_new, err_new)).sum(axis=0)[0,0], ' output_node_value_new ', output_node_value_new.T.tolist()[0], ' class_value ', class_value)
+      print('mathmatical err ',  (0.5 * np.multiply(err_new, err_new)).sum(axis=0)[0,0])
+      # print()
 
   return input_hidden_weight, hidden_output_weight
 
@@ -403,8 +420,8 @@ def test_train():
   )
   for i in range(train_times):
     nn.train([0.05, 0.1], [0.01, 0.99])
-    # this may be an error, calculate_total_error changed the output value
-    # print('NeuralNetwork err ', nn.calculate_total_error([[[0.05, 0.1], [0.01, 0.99]]]))
+    # this may be an error, calculate_total_error changed the output value, (it use the new weight to calculate error)
+    print('NeuralNetwork err ', nn.calculate_total_error([[[0.05, 0.1], [0.01, 0.99]]]))
 
   data_item = [0.05, 0.1, 0.01, 0.99]
   train([data_item])
