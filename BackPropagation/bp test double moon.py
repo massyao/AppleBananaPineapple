@@ -1,3 +1,4 @@
+
 import math;
 import numpy as np;
 import random;
@@ -9,7 +10,10 @@ from double_moon import *
 from utils import *
 import os
 
-
+# this back propagation code costs me three weeks
+# from 2023/2/7 to 2023/2/28
+# no reference, just translate Haykin's book formula to python code
+#  I use mattmazur.com's example to revise my code
 
 absolute_path = os.path.dirname(__file__)
 # file_path = os.path.join(absolute_path, 'log.txt')
@@ -20,7 +24,7 @@ absolute_path = os.path.dirname(__file__)
 # hidden layer nodes set to 5
 
 
-train_times = 33
+train_epochs = 10
 
 ETA = 0.5
 
@@ -38,108 +42,135 @@ def local_gradient(x):
 
 def train(
     data_list,
-    input_node_num = 2,
-    hidden_node_num = 5,
-    output_node_num = 2,
+    layer_node_num = [2, 2, 2],
   ):
 
-  # # NeuralNetwork config
-  # input_hidden_weight_const = [0.15, 0.2, 0.25, 0.3]
-  # hidden_output_weight_const = [0.4, 0.45, 0.5, 0.55]
-  # input_bias = 0.35 # 1
-  # hidden_bias = 0.6 # 1
-  # input_hidden_weight = np.insert(np.matrix(input_hidden_weight_const).reshape((2, 2)), 0, 1, axis=1) # np.random.rand(hidden_node_num, input_node_num + 1)
-  # hidden_output_weight = np.insert(np.matrix(hidden_output_weight_const).reshape((2, 2)), 0, 1, axis=1)# np.random.rand(output_node_num, hidden_node_num + 1)
+  H_W=[0.15, 0.2, 0.25, 0.3],
+  hidden_layer_bias=0.35,
+  O_W=[0.4, 0.45, 0.5, 0.55],
+  output_layer_bias=0.6
 
-
+  input_node_num = layer_node_num[0]
+  output_node_num = layer_node_num[-1]
+  hidden_node_num = 2
   # allen config
-  input_bias = 0.5 # 1
-  hidden_bias = 0.5 # 1
+  input_bias = 0.35 # 1
+  hidden_bias = 0.6 # 1
   # add bias weight
-  input_hidden_weight = np.random.rand(hidden_node_num, input_node_num + 1)
-  hidden_output_weight = np.random.rand(output_node_num, hidden_node_num + 1)
 
-  hidden_node_v = np.zeros((hidden_node_num, 1))
-  hidden_node_value = np.zeros((hidden_node_num, 1))
+  # first layer is first hidden layer, the last layer is output layer
+  N = len(layer_node_num) - 1 # hidden_and_output_layer_num
+  # layer_node_weight = [np.random.rand(layer_node_num[i + 1], layer_node_num[i] + 1) for i in range(N)]
+  layer_node_weight = [np.insert(np.matrix(H_W if i == 0 else O_W ).reshape((2, 2)), 0, 1, axis=1) for i in range(N)]
   
-  output_node_v = np.zeros((output_node_num, 1))
-  output_node_value = np.zeros((output_node_num, 1))
+  layer_node_v = [np.zeros((layer_node_num[i + 1], 1)) for i in range(N)]
+  layer_node_value = [np.zeros((layer_node_num[i + 1], 1)) for i in range(N)]
+
+  layer_node_v_new = [np.zeros((layer_node_num[i + 1], 1)) for i in range(N)]
+  layer_node_value_new = [np.zeros((layer_node_num[i + 1], 1)) for i in range(N)]
+
+
+  print()
 
   err = np.zeros((output_node_num, 1))
-
-  w_delta_hidden = np.random.rand(output_node_num, 1)
-  w_delta_input = np.random.rand(hidden_node_num, 1)
 
   # f = open(file_path, "a")
   err_for_plot = []
 
-  for train_times_index in range(train_times):
-    print('----------------------------', train_times_index)
-    # print('train_times_index', train_times_index)
-    for  data_index, data_item in enumerate(data_list):
 
+  if len(data_list[0]) != input_node_num + output_node_num:
+    raise Exception('input_value and desired_value length not match layer_node_num')
+
+
+  for train_epoch_index in range(train_epochs):
+    print('------------------  ', train_epoch_index, '  ------------------')
+    # print('train_epoch_index', train_epoch_index)
+    for  data_index, data_item in enumerate(data_list):
+      # one train batch
       # print('input_hidden_weight', input_hidden_weight)
 
       input_value = data_item[0: -output_node_num]
-      # class_value = [ e if e > 0 else 0 for i, e in enumerate(data_item[-output_node_num: ])]
-      class_value = data_item[-output_node_num: ]
+      input_extend = np.matrix([input_bias] + input_value).T
+      # desired_value = [ e if e > 0 else 0 for i, e in enumerate(data_item[-output_node_num: ])]
+      desired_value = data_item[-output_node_num: ]
+      print()
+
+      # forward phase, input -> output
+      for i in range(N):
+        # print('layer_node_weight[i]',i , ' weight shape', layer_node_weight[i].shape, ' layer_node_value[i - 1] shape ', layer_node_value[i - 1].shape)
+        layer_node_v[i] = layer_node_weight[i] * ((np.insert(layer_node_value[i - 1], 0, hidden_bias, axis=0)) if i != 0 else input_extend)
+        layer_node_value[i] = activation_function(layer_node_v[i])
+        print()
+      
+      output_node_value = layer_node_value[-1]
+      err = np.matrix(desired_value).T - output_node_value
+
+      # if data_index % 100 == 99:
+      #   err_for_plot.append((0.5 * np.multiply(err, err)).sum(axis=0)[0,0])
+      # print('err', err)
+
+
+      # backward phase, output -> input
+      # local_gradient(layer_node_v[i]) also equals to layer_node_value[i] * (1 - layer_node_value[i])
+      node_delta = [None for i in range(N)]
+      reverse_index = [i for i in range(N)]
+      reverse_index.reverse()
+      for i in reverse_index:
+        node_local_gradient = local_gradient(layer_node_v[i])
+        if i == N - 1:
+          node_delta[i] = np.multiply(node_local_gradient,  err)
+        else:
+          node_delta[i] = np.multiply(
+            node_local_gradient,
+            (layer_node_weight[i - 1].T * node_delta[i - 1])[1:]
+          )
+      # node_delta.reverse()
+
+      node_weight_adjustment = [None for i in range(N)]
+      for i in range(N):
+        if i == 0:
+          node_weight_adjustment[i] = ETA * (1) * node_delta[i] * (input_extend.T)
+        else:
+          node_weight_adjustment[i] = ETA * (1) * node_delta[i] * np.insert(layer_node_value[i - 1], 0, 1, axis=0).T
+      print()
+      # layer_node_weight is a python list,'+' will concat the two lists
+      # layer_node_weight = layer_node_weight + node_weight_adjustment
+      for i in range(N):
+        layer_node_weight[i] = layer_node_weight[i] + node_weight_adjustment[i]
+      # NeuralNetwork did not update bias weight
+      # if update bias weight, the result will be better
+      for i in range(N):
+        layer_node_weight[i][:, 0] = 1
+
+      print()
+      # to compare with NeuralNetwork's error 
+      for i in range(N):
+        # print('layer_node_weight[i]',i , ' weight shape', layer_node_weight[i].shape, ' layer_node_value[i - 1] shape ', layer_node_value[i - 1].shape)
+        layer_node_v_new[i] = layer_node_weight[i] * ((np.insert(layer_node_value[i - 1], 0, hidden_bias, axis=0)) if i != 0 else input_extend)
+        layer_node_value_new[i] = activation_function(layer_node_v_new[i])
 
       
-      # forward phase, input -> hidden
-      input_extend = np.matrix([input_bias] + input_value).T
-      hidden_node_v = input_hidden_weight * input_extend
-      hidden_node_value = activation_function(hidden_node_v)
+      output_node_value_new = layer_node_value_new[-1]
+      err = np.matrix(desired_value).T - output_node_value_new
+      err_for_plot.append((0.5 * np.multiply(err, err)).sum(axis=0)[0,0])
 
-      # forward phase, hidden -> output
-      output_node_v = (hidden_output_weight) * np.insert(hidden_node_value, 0, hidden_bias).T
-      output_node_value = activation_function(output_node_v)
-
-      # calculate error
-      # notice nn use sum(error) as error
-      # notice: err should be 0.5 * np.multiply(err_temp, err_temp)
-      err = np.matrix(class_value).T - output_node_value
-      # print('class_value ', class_value, ' output_node_value ', output_node_value.T.tolist()[0])
-      if data_index % 100 == 99:
-        err_for_plot.append((0.5 * np.multiply(err, err)).sum(axis=0)[0,0])
-      # print('mathmatical err ', (0.5 * np.multiply(err, err)).sum(axis=0)[0,0])
-
-
-      # backward phase, output -> hidden
-      local_gradient_output_node_v = local_gradient(output_node_v)
-      delta_output = np.multiply(local_gradient_output_node_v, err)
-      delta_w = ETA * (1) * delta_output * np.insert(hidden_node_value, 0, 1)
-      # hidden_output_weight = hidden_output_weight + delta_w
-      hidden_output_weight_new = hidden_output_weight + delta_w
-      # print()
-
-      # backward phase, hidden -> input
-      delta_hidden_sum = (hidden_output_weight.T * delta_output)[1:]
-      delta_input = np.multiply(local_gradient(hidden_node_v), delta_hidden_sum)
-      # notice delta_w_input should be delta_input * input_value
-      # delta_w_input = ETA *  np.multiply(delta_input, hidden_node_value)
-      delta_w_input = ETA * (1) * delta_input * np.matrix(input_value)
-
-      # update weight
-      hidden_output_weight = hidden_output_weight_new
-      # input_hidden_weight = input_hidden_weight + delta_w_input * (np.matrix([input_bias] + input_value))
-      input_hidden_weight = input_hidden_weight + np.insert(delta_w_input, 0, 0, axis=1)
-      # print()
   return err_for_plot
   # return input_hidden_weight, hidden_output_weight
 
 def test_train():
   clear()
 
-  test_data  = double_moon(2, 500, '01')
-  new_data = [
-    [e[0] / 10, e[1] / 10, e[2], e[3]] for i, e in enumerate(test_data['all'])
-  ]
+  # test_data  = double_moon(2, 500, '01')
+  # new_data = [
+  #   [e[0] / 10, e[1] / 10, e[2], e[3]] for i, e in enumerate(test_data['all'])
+  # ]
   # print('test_data', test_data)
-  err_list = train(new_data)
-  x = [i for i in range(len(err_list))]
-  plt.plot(x, err_list)
-  plt.show()
-  print()
+  data_item = [0.05, 0.1, 0.01, 0.99]
+  err_list = train([data_item])
+  # x = [i for i in range(len(err_list))]
+  # plt.plot(x, err_list)
+  # plt.show()
+  print(err_list)
 
   
   # dot1 = plt.scatter(
