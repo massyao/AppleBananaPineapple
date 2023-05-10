@@ -1,3 +1,3 @@
 # AppleBananaPineapple
 
-test some code
+test statistic \ machine learning \ deep learning code 
